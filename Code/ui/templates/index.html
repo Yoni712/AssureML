@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AssureML – AI Dependability Testbench</title>
+
+<style>
+    /* === GLOBAL STYLING === */
+    body {
+        margin: 0;
+        font-family: "Montserrat", sans-serif;
+        background: radial-gradient(circle at 20% 20%, #0b0f15, #06070a 80%);
+        color: #d6e2ff;
+        overflow-x: hidden;
+    }
+
+    .grid-bg::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px),
+                    linear-gradient(0deg, rgba(255,255,255,.08) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: -2;
+        filter: blur(1px);
+    }
+
+    .glow {
+        background: linear-gradient(130deg, #1a9fff, #7b11f5, #00e5ff);
+        background-size: 300% 300%;
+        animation: glowMove 8s ease infinite;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    @keyframes glowMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    header {
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    h1 {
+        font-size: 4rem;
+        font-weight: 900;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        font-size: 1.3rem;
+        opacity: 0.8;
+        margin-top: -10px;
+        margin-bottom: 40px;
+    }
+
+    .card {
+        width: 60%;
+        margin: auto;
+        padding: 40px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 0 25px rgba(0, 209, 255, 0.15);
+        animation: fadeIn 1.2s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+        font-size: 1.1rem;
+        opacity: 0.85;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    input[type="file"], select {
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: #d6e2ff;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    button {
+        cursor: pointer;
+        width: 100%;
+        padding: 14px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(120deg, #00c6ff, #7b11f5);
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 20px rgba(0, 204, 255, 0.5);
+    }
+
+    .results-box {
+        margin-top: 30px;
+        padding: 20px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 15px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    footer {
+        text-align: center;
+        padding: 25px;
+        margin-top: 60px;
+        opacity: 0.5;
+        font-size: 0.9rem;
+    }
+
+    .score-green  { color: #00ff95; font-weight: bold; }
+    .score-yellow { color: #ffe066; font-weight: bold; }
+    .score-red    { color: #ff4d4d; font-weight: bold; }
+
+    .result-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .result-table th {
+        text-align: left;
+        padding: 8px;
+        background: rgba(255,255,255,0.1);
+    }
+
+    .result-table td {
+        padding: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+</style>
+</head>
+
+<body class="grid-bg">
+
+<header>
+    <h1 class="glow">ASSUREML</h1>
+    <p class="subtitle">AI Dependability – Measured, Visualized, Understood.</p>
+</header>
+
+<div class="card">
+
+    <h2 style="text-align:center;">Upload Your Model</h2>
+    <p style="text-align:center; opacity:0.7;">We will evaluate robustness, consistency & variance.</p>
+    <br>
+
+    <form action="/upload_model" method="POST" enctype="multipart/form-data">
+
+        <label>Select Model Type</label>
+        <select name="model_type" required>
+            <option value="tabular">Tabular</option>
+            <option value="image">Image</option>
+            <option value="text">Text</option>
+        </select>
+
+        <label>Select Model File</label>
+        <input type="file" name="model_file" required>
+
+        <label>Upload Dataset (CSV, TXT, or ZIP)</label>
+        <input type="file" name="dataset_file" required>
+
+        <button type="submit">Run Dependability Tests</button>
+    </form>
+
+    {% if results %}
+    <div class="results-box">
+        <h3>Model Type: {{ results.model_type }}</h3>
+
+        <h4>📊 Summary</h4>
+        <ul>
+            <li><strong>Robustness:</strong>
+                <span class="
+                    {% if results.robustness[0] > 0.95 %}score-green
+                    {% elif results.robustness[0] > 0.85 %}score-yellow
+                    {% else %}score-red{% endif %}">
+                    {{ results.robustness[0] | round(4) }}
+                </span>
+            </li>
+
+            <li><strong>Consistency:</strong>
+                <span class="
+                    {% if results.consistency[0] > 0.95 %}score-green
+                    {% elif results.consistency[0] > 0.85 %}score-yellow
+                    {% else %}score-red{% endif %}">
+                    {{ results.consistency[0] | round(4) }}
+                </span>
+            </li>
+
+            <li><strong>Variance:</strong>
+                <span class="
+                    {% if results.variance[0] < 0.005 %}score-green
+                    {% elif results.variance[0] < 0.02 %}score-yellow
+                    {% else %}score-red{% endif %}">
+                    {{ results.variance[0] | round(6) }}
+                </span>
+            </li>
+        </ul>
+
+
+        <hr>
+
+        <h4>🔧 Robustness Distribution</h4>
+        <table class="result-table">
+            <tr><th>#</th><th>Score</th></tr>
+            {% for val in results.robustness[1] %}
+                <tr><td>{{ loop.index }}</td><td>{{ val | round(6) }}</td></tr>
+            {% endfor %}
+        </table>
+
+
+        <h4>🔧 Consistency Breakdown</h4>
+        <table class="result-table">
+            <tr><th>Perturbation</th><th>Similarity</th></tr>
+            {% for key, val in results.consistency[1].items() %}
+                <tr><td>{{ key }}</td><td>{{ val | round(6) }}</td></tr>
+            {% endfor %}
+        </table>
+
+
+        <h4>🔧 Variance Across Runs</h4>
+        <table class="result-table">
+            <tr><th>Run</th><th>Variance</th></tr>
+            {% for val in results.variance[1] %}
+                <tr><td>{{ loop.index }}</td><td>{{ val | round(6) }}</td></tr>
+            {% endfor %}
+        </table>
+
+    </div>
+    {% endif %}
+
+
+
+</div>
+
+<footer>
+    © 2025 AssureML – Reliable AI for a Safer Future.
+</footer>
+
+</body>
+</html>
