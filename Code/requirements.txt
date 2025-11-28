@@ -1,6 +1,7 @@
 Flask
 gunicorn
 torch
+torchvision
 transformers
 scikit-learn
 joblib
