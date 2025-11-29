@@ -35,10 +35,11 @@ def load_text_model():
 
 
 def load_image_model(path):
-    # load full model saved with torch.save(model)
-    model = torch.load(path, map_location="cpu")
+    # PyTorch 2.6 requires disabling weights_only to load full model pickles
+    model = torch.load(path, map_location="cpu", weights_only=False)
     model.eval()
     return model
+
 
 
 def load_keras_model(path):
