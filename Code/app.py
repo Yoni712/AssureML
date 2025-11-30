@@ -41,7 +41,6 @@ def load_image_model(path):
     return model
 
 
-
 def load_keras_model(path):
     from tensorflow.keras.models import load_model
     return load_model(path)
@@ -78,12 +77,19 @@ def load_metrics():
 def index():
     return render_template("index.html")
 
+@app.route("/test")
+def test_page():
+    return render_template("testbench.html")
 
 @app.route("/upload_model", methods=["POST"])
 def upload_model():
     model_file = request.files["model_file"]
     dataset_file = request.files["dataset_file"]
     model_type = request.form.get("model_type")
+    batch_size = request.form.get("batch_size", "all")
+
+    if batch_size != "all":
+        batch_size = int(batch_size)
 
     # save uploads
     model_path = os.path.join(app.config["UPLOAD_FOLDER"], model_file.filename)
@@ -136,50 +142,113 @@ def upload_model():
     elif model_type == "image":
         import zipfile
 
-        # Load full PyTorch model from .pt (torch.save(model))
+        # Load model
         model = load_image_model(model_path)
 
-        # unzip images
+        # Unzip images
         extract_folder = dataset_path + "_unzipped"
         os.makedirs(extract_folder, exist_ok=True)
 
         with zipfile.ZipFile(dataset_path, "r") as z:
             z.extractall(extract_folder)
 
+        # Collect all images
         img_files = [
             f for f in os.listdir(extract_folder)
             if f.lower().endswith((".png", ".jpg", ".jpeg"))
         ]
 
-        img_path = os.path.join(extract_folder, img_files[0])
+        # Apply batch size
+        if batch_size != "all":
+            img_files = img_files[:batch_size]
 
-        # Autodetect input channel requirements
-        children = list(model.children())
-        if len(children) > 0 and hasattr(children[0], "in_channels"):
-            expected_channels = children[0].in_channels
-        else:
-            expected_channels = 3  # fallback
-
-        # Convert image accordingly
-        if expected_channels == 1:
-            pil_img = Image.open(img_path).convert("L")
-        else:
-            pil_img = Image.open(img_path).convert("RGB")
-
-        # use standard 224x224 unless your model needs something else
+        # Prepare transform
+        from torchvision import transforms
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor()
         ])
 
-        img_tensor = transform(pil_img).unsqueeze(0)  # shape (1,C,H,W)
+        # Results lists
+        robust_scores = []
+        robust_dists = []
+
+        cons_scores = []
+        cons_breakdowns = []
+
+        var_scores = []
+        var_lists = []
+
+        # Run the model on each sample
+        for img_name in img_files:
+            img_path = os.path.join(extract_folder, img_name)
+
+            pil_img = Image.open(img_path).convert("RGB")
+            img_tensor = transform(pil_img).unsqueeze(0)
+
+            # Run each metric (which returns avg + details)
+            r_avg, r_dist = M["robust_img"](model, img_tensor, adapter)
+            c_avg, c_break = M["cons_img"](model, img_tensor, adapter)
+            v_avg, v_list = M["var_img"](model, img_tensor, adapter)
+
+            robust_scores.append(r_avg)
+            robust_dists.append(r_dist)
+
+            cons_scores.append(c_avg)
+            cons_breakdowns.append(c_break)
+
+            var_scores.append(v_avg)
+            var_lists.append(v_list)
+
+        # Aggregate metrics
+        import numpy as np
+
+        robust_mean = float(np.mean(robust_scores))
+        cons_mean = float(np.mean(cons_scores))
+        var_mean = float(np.mean(var_scores))
+
+        # Convert to % with color labels (your existing logic)
+        robust_pct = round(robust_mean * 100, 2)
+        cons_pct = round(cons_mean * 100, 2)
+
+        var_norm = max(0, 1 - min(var_mean * 50, 1))
+        var_pct = round(var_norm * 100, 2)
+
+        def score_color(p):
+            if p >= 85:
+                return "good"
+            elif p >= 60:
+                return "mid"
+            else:
+                return "bad"
 
         results = {
             "model_type": "Image",
-            "robustness": M["robust_img"](model, img_tensor, adapter),
-            "consistency": M["cons_img"](model, img_tensor, adapter),
-            "variance": M["var_img"](model, img_tensor, adapter)
+            "batch_evaluated": len(img_files),
+
+            "robustness": robust_pct,
+            "robustness_color": score_color(robust_pct),
+
+            "consistency": cons_pct,
+            "consistency_color": score_color(cons_pct),
+
+            "variance": var_pct,
+            "variance_color": score_color(var_pct),
+
+            "raw": {
+                "robust_per_sample": robust_scores,
+                "robust_dists": robust_dists,
+
+                "cons_per_sample": cons_scores,
+                "cons_breakdowns": cons_breakdowns,
+
+                "var_per_sample": var_scores,
+                "var_lists": var_lists,
+            }
         }
+
+        return render_template("testbench.html", results=results)
+
 
 
     # --------------------------
@@ -188,7 +257,7 @@ def upload_model():
     else:
         results = {"error": "Unknown model type"}
 
-    return render_template("index.html", results=results)
+    return render_template("testbench.html", results=results)
 
 
 if __name__ == "__main__":
