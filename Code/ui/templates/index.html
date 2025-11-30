@@ -156,10 +156,67 @@
         border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
+
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(5, 8, 15, 0.88);
+        backdrop-filter: blur(6px);
+        display: none; /* hidden by default */
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .loader-container {
+        text-align: center;
+    }
+
+    .spinner {
+        width: 70px;
+        height: 70px;
+        border: 6px solid rgba(0, 204, 255, 0.5);
+        border-top-color: #00eaff;
+        border-radius: 50%;
+        animation: spin 1.1s linear infinite;
+        margin: auto;
+    }
+
+    .loading-text {
+        margin-top: 20px;
+        font-size: 1.3rem;
+        color: #d6e2ff;
+        letter-spacing: 1px;
+        opacity: 0.9;
+        animation: fadeBlink 2s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeBlink {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+
 </style>
 </head>
 
 <body class="grid-bg">
+
+<div id="loading-overlay">
+    <div class="loader-container">
+        <div class="spinner"></div>
+        <p class="loading-text">Running Dependability Tests...<br>Please wait</p>
+    </div>
+</div>
 
 <header>
     <h1 class="glow">ASSUREML</h1>
@@ -263,6 +320,13 @@
 <footer>
     © 2025 AssureML – Reliable AI for a Safer Future.
 </footer>
+
+<script>
+    // Show loading overlay when form is submitted
+    document.querySelector("form").addEventListener("submit", function () {
+        document.getElementById("loading-overlay").style.display = "flex";
+    });
+</script>
 
 </body>
 </html>
