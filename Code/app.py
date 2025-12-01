@@ -107,15 +107,21 @@ def upload_model():
     if model_type == "tabular":
         import pandas as pd
         df = pd.read_csv(dataset_path)
-        inputs = df.values.tolist()
+        inputs = df.values.tolist()  # raw rows
+
+        from adapters.tabular_adapter import TabularAdapter
+        tab_adapter = TabularAdapter()
+
+        # APPLY ADAPTER HERE
+        processed_inputs = [tab_adapter.adapter_input(row) for row in inputs]
 
         model = load_tabular_model(model_path)
 
         results = {
             "model_type": "Tabular",
-            "robustness": M["robust_tab"](model, inputs, adapter),
-            "consistency": M["cons_tab"](model, inputs, adapter),
-            "variance": M["var_tab"](model, inputs, adapter)
+            "robustness": M["robust_tab"](model, processed_inputs, adapter),
+            "consistency": M["cons_tab"](model, processed_inputs, adapter),
+            "variance": M["var_tab"](model, processed_inputs, adapter)
         }
 
 
@@ -126,14 +132,20 @@ def upload_model():
         with open(dataset_path, "r", encoding="utf-8") as f:
             text_data = f.read()
 
+        from adapters.text_adapter import TextAdapter
+        txt_adapter = TextAdapter()
+
+        processed_text = txt_adapter.adapter_input(text_data)
+
         model = load_text_model()
 
         results = {
             "model_type": "Text",
-            "robustness": M["robust_txt"](model, text_data, adapter),
-            "consistency": M["cons_txt"](model, text_data, adapter),
-            "variance": M["var_txt"](model, text_data, adapter)
+            "robustness": M["robust_txt"](model, processed_text, adapter),
+            "consistency": M["cons_txt"](model, processed_text, adapter),
+            "variance": M["var_txt"](model, processed_text, adapter)
         }
+
 
 
     # --------------------------
