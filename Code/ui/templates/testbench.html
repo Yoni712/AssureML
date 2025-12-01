@@ -304,18 +304,18 @@
         <div class="results-title">Results & Interpretation</div>
 
         {% if results %}
-            {% if results.model_type == "Image" %}
-                <!-- Robustness distributions for ALL samples -->
+            {% if results.raw %}
+                <!-- Robustness for ALL model types -->
                 <div id="robust-data" style="display:none;">
                     {{ results.raw.robust_dists | tojson }}
                 </div>
 
-                <!-- Consistency breakdowns for ALL samples -->
+                <!-- Consistency breakdowns -->
                 <div id="consist-data" style="display:none;">
                     {{ results.raw.cons_breakdowns | tojson }}
                 </div>
 
-                <!-- Variance lists for ALL samples -->
+                <!-- Variance lists -->
                 <div id="variance-data" style="display:none;">
                     {{ results.raw.var_lists | tojson }}
                 </div>
@@ -375,11 +375,19 @@
                 <canvas id="varianceChart"></canvas>
             </div>
 
-            {% if results.model_type == "Image" %}
+            {% if results.raw %}
+                <h3 style="margin-top: 25px; font-size: 1.05rem;">Visual Analysis</h3>
+
+                <div style="margin-top: 15px;"><canvas id="robustnessChart"></canvas></div>
+                <div style="margin-top: 25px;"><canvas id="consistencyChart"></canvas></div>
+                <div style="margin-top: 25px;"><canvas id="varianceChart"></canvas></div>
+            {% else %}
+                <p>No visualization available.</p>
+            {% endif %}
+
+            {% if results.raw %}
                 <div class="raw-title">Raw result payload</div>
-                <div class="raw-box">
-                    {{ results.raw }}
-                </div>
+                <div class="raw-box">{{ results.raw }}</div>
             {% endif %}
 
         {% else %}
