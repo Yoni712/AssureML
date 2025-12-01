@@ -49,7 +49,7 @@ def variance_test_text(model, text, output_adapter, n_runs=10):
     for _ in range(n_runs):
         # Very small typo noise to simulate micro input jitter
         t = text_typo_noise(text, prob=0.003)
-        y = output_adapter.adapt_output(model.predict_proba(t))
+        y = output_adapter.adapt_output(model.predict_proba([t])[0])
         outputs.append(y)
 
     outputs = np.array(outputs)

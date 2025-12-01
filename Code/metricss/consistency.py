@@ -59,18 +59,18 @@ def consistency_test_image(model, img_tensor, output_adapter):
 
 def consistency_test_text(model, text, output_adapter):
 
-    y_orig = output_adapter.adapt_output(model.predict_proba(text))
+    y_orig = output_adapter.adapt_output(model.predict_proba([text])[0])
 
     results = {}
 
     # Lowercase version (meaning preserved)
     t1 = lowercase(text)
-    y1 = output_adapter.adapt_output(model.predict_proba(t1))
+    y1 = output_adapter.adapt_output(model.predict_proba([t1])[0])
     results["lowercase"] = cosine_similarity(y_orig, y1)
 
     # Very small typo noise (barely meaning-changing)
     t2 = text_typo_noise(text, prob=0.005)
-    y2 = output_adapter.adapt_output(model.predict_proba(t2))
+    y2 = output_adapter.adapt_output(model.predict_proba([t2])[0])
     results["tiny_typo_noise"] = cosine_similarity(y_orig, y2)
 
     avg_score = sum(results.values()) / len(results)

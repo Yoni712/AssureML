@@ -50,14 +50,14 @@ def robustness_test_text(model, text, output_adapter, n=5):
     scores = []
 
     # Original prediction
-    y_orig = output_adapter.adapt_output(model.predict_proba(text))
+    y_orig = output_adapter.adapt_output(model.predict_proba([text])[0])
 
     for _ in range(n):
         # Apply noise perturbations (typos + word dropout)
         t = text_typo_noise(text)
         t = word_dropout(t)
 
-        y_pert = output_adapter.adapt_output(model.predict_proba(t))
+        y_pert = output_adapter.adapt_output(model.predict_proba([t])[0])
         score = cosine_similarity(y_orig, y_pert)
         scores.append(score)
 
