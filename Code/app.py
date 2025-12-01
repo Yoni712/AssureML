@@ -29,9 +29,9 @@ def load_tabular_model(path):
     return joblib.load(path)
 
 
-def load_text_model():
-    from models.text_model import TextModel
-    return TextModel()
+def load_text_model(path):
+    import joblib
+    return joblib.load(path)
 
 
 def load_image_model(path):
@@ -106,47 +106,129 @@ def upload_model():
     # --------------------------
     if model_type == "tabular":
         import pandas as pd
-        df = pd.read_csv(dataset_path)
-        inputs = df.values.tolist()  # raw rows
-
         from adapters.tabular_adapter import TabularAdapter
         tab_adapter = TabularAdapter()
 
-        # APPLY ADAPTER HERE
-        processed_inputs = [tab_adapter.adapter_input(row) for row in inputs]
+        df = pd.read_csv(dataset_path)
+
+        rows = df.values.tolist()
+        if batch_size != "all":
+            rows = rows[:batch_size]
+
+        # Convert each row to numpy array shape (1, n)
+        processed_rows = [tab_adapter.adapter_input(row) for row in rows]
 
         model = load_tabular_model(model_path)
 
+        robust_scores = []
+        robust_dists = []
+
+        cons_scores = []
+        cons_breaks = []
+
+        var_scores = []
+        var_lists = []
+
+        # Run metrics per-sample like image
+        for sample in processed_rows:
+            r_avg, r_dist = M["robust_tab"](model, sample, adapter)
+            c_avg, c_break = M["cons_tab"](model, sample, adapter)
+            v_avg, v_list = M["var_tab"](model, sample, adapter)
+
+            robust_scores.append(r_avg)
+            robust_dists.append(r_dist)
+
+            cons_scores.append(c_avg)
+            cons_breaks.append(c_break)
+
+            var_scores.append(v_avg)
+            var_lists.append(v_list)
+
+        import numpy as np
+
+        robust_mean = float(np.mean(robust_scores))
+        cons_mean = float(np.mean(cons_scores))
+        var_mean = float(np.mean(var_scores))
+
+        robust_pct = round(robust_mean * 100, 2)
+        cons_pct = round(cons_mean * 100, 2)
+
+        var_norm = max(0, 1 - min(var_mean * 50, 1))
+        var_pct = round(var_norm * 100, 2)
+
+        def score_color(p):
+            if p >= 85:
+                return "good"
+            elif p >= 60:
+                return "mid"
+            else:
+                return "bad"
+
         results = {
             "model_type": "Tabular",
-            "robustness": M["robust_tab"](model, processed_inputs, adapter),
-            "consistency": M["cons_tab"](model, processed_inputs, adapter),
-            "variance": M["var_tab"](model, processed_inputs, adapter)
+            "batch_evaluated": len(processed_rows),
+
+            "robustness": robust_pct,
+            "consistency": cons_pct,
+            "variance": var_pct,
+
+            "robustness_color": score_color(robust_pct),
+            "consistency_color": score_color(cons_pct),
+            "variance_color": score_color(var_pct),
+
+            "robustness_text": "Higher = consistent predictions under feature noise.",
+            "consistency_text": "Insensitive to scaling/rounding perturbations.",
+            "variance_text": "Low variance = stable model.",
+
+            "raw": {
+                "robust_dists": robust_dists,
+                "cons_breakdowns": cons_breaks,
+                "var_lists": var_lists,
+            }
         }
+
+
 
 
     # --------------------------
     # TEXT
     # --------------------------
     elif model_type == "text":
-        with open(dataset_path, "r", encoding="utf-8") as f:
-            text_data = f.read()
-
         from adapters.text_adapter import TextAdapter
         txt_adapter = TextAdapter()
 
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            text_data = f.read()
+
+        model = load_text_model(model_path)
         processed_text = txt_adapter.adapter_input(text_data)
 
-        model = load_text_model()
+        r_avg, r_dist = M["robust_txt"](model, processed_text, adapter)
+        c_avg, c_break = M["cons_txt"](model, processed_text, adapter)
+        v_avg, v_list = M["var_txt"](model, processed_text, adapter)
 
         results = {
             "model_type": "Text",
-            "robustness": M["robust_txt"](model, processed_text, adapter),
-            "consistency": M["cons_txt"](model, processed_text, adapter),
-            "variance": M["var_txt"](model, processed_text, adapter)
+            "batch_evaluated": 1,
+
+            "robustness": round(r_avg * 100, 2),
+            "consistency": round(c_avg * 100, 2),
+            "variance": round((1 - min(v_avg * 50, 1)) * 100, 2),
+
+            "robustness_color": "good" if r_avg*100 >= 85 else "mid" if r_avg*100 >= 60 else "bad",
+            "consistency_color": "good" if c_avg*100 >= 85 else "mid" if c_avg*100 >= 60 else "bad",
+            "variance_color": "good" if (1 - min(v_avg * 50, 1)) * 100 >= 85 else "mid" if (1 - min(v_avg * 50, 1)) * 100 >= 60 else "bad",
+
+            "robustness_text": "Shows robustness to typos, word dropout & small text noise.",
+            "consistency_text": "Meaning-preserving changes should not flip predictions.",
+            "variance_text": "Low variance means stable prediction under micro-typos.",
+
+            "raw": {
+                "robust_dists": r_dist,
+                "cons_breakdowns": c_break,
+                "var_lists": v_list,
+            }
         }
-
-
 
     # --------------------------
     # IMAGE
