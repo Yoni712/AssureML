@@ -304,20 +304,23 @@
         <div class="results-title">Results & Interpretation</div>
 
         {% if results %}
-            <!-- Robustness distributions for ALL samples -->
-            <div id="robust-data" style="display:none;">
-                {{ results.raw.robust_dists | tojson }}
-            </div>
+            {% if results.model_type == "Image" %}
+                <!-- Robustness distributions for ALL samples -->
+                <div id="robust-data" style="display:none;">
+                    {{ results.raw.robust_dists | tojson }}
+                </div>
 
-            <!-- Consistency breakdowns for ALL samples -->
-            <div id="consist-data" style="display:none;">
-                {{ results.raw.cons_breakdowns | tojson }}
-            </div>
+                <!-- Consistency breakdowns for ALL samples -->
+                <div id="consist-data" style="display:none;">
+                    {{ results.raw.cons_breakdowns | tojson }}
+                </div>
 
-            <!-- Variance lists for ALL samples -->
-            <div id="variance-data" style="display:none;">
-                {{ results.raw.var_lists | tojson }}
-            </div>
+                <!-- Variance lists for ALL samples -->
+                <div id="variance-data" style="display:none;">
+                    {{ results.raw.var_lists | tojson }}
+                </div>
+            {% endif %}
+
 
             <div class="metric-row">
                 <div class="metric-box">
@@ -372,10 +375,13 @@
                 <canvas id="varianceChart"></canvas>
             </div>
 
-            <div class="raw-title">Raw result payload</div>
-            <div class="raw-box">
-                {{ results.raw }}
-            </div>
+            {% if results.model_type == "Image" %}
+                <div class="raw-title">Raw result payload</div>
+                <div class="raw-box">
+                    {{ results.raw }}
+                </div>
+            {% endif %}
+
         {% else %}
             <p>No results yet. Upload and run tests to see output.</p>
         {% endif %}
