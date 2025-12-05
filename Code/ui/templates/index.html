@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>AssureML – AI Dependability Testbench</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TZ8BY7F85N"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-TZ8BY7F85N');
+</script>
 
 <style>
     /* === GLOBAL STYLING === */
@@ -538,10 +548,10 @@
         </p>
         <div class="hero-cta">
             <button class="hero-button-primary" onclick="window.location.href='/test'">
-                <span>⚙️</span> <span>Open Dependability Testbench</span>
+                <span></span> <span>Open Dependability Testbench</span>
             </button>
             <button class="hero-button-ghost" onclick="document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });">
-                <span>📘</span> <span>How it works</span>
+                <span></span> <span>How it works</span>
             </button>
         </div>
     </header>
@@ -567,7 +577,7 @@
                 <div class="how-title">Attach a small dataset</div>
                 <div class="how-text">
                     Upload a representative dataset (<strong>CSV</strong>, <strong>TXT</strong>, or <strong>ZIP of images</strong>).
-                    We use it to probe your model under controlled perturbations.
+                    We use it to probe your model under controlled disturbance.
                 </div>
             </div>
             <div class="how-card">
